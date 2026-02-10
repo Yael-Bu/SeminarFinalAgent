@@ -11,3 +11,7 @@ class SimulationState(TypedDict):
     scenario_id: str  # איזה תרחיש נבחר רנדומלית
     scenario_data: dict # נתונים ספציפיים לתרחיש (הוראות, רמזים)
     attempts: int # ספירת ניסיונות (אופציונלי לציון)
+    welcome_presented: bool # האם הוצג כבר מסר קבלת הפנים למשתמש
+    task_presented: bool # האם הוצג כבר המשימה למשתמש
+    crash_presented: bool # האם הוצג כבר קריסת הייצור
+    last_actor: Literal["team_lead", "architect", None] # מי הפעיל את הצומת האחרון (לניתוב דינמי)

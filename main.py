@@ -3,85 +3,96 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from production_sim import ProductionTrapSim
 
-# טעינת משתני סביבה
 load_dotenv()
 
+
 def get_multiline_input():
-    """
-    פונקציה שמאפשרת למשתמש להקליד/להדביק קוד שלם.
-    הקליטה מסתיימת רק כשהמשתמש כותב 'DONE' בשורה חדשה.
-    """
     print("\n📝 You (Dev) - Type/Paste your code below.")
-    print("   (Type 'DONE' on a new line and press Enter to send)")
+    print("   (Type 'DONE' on a new line and press Enter to submit)")
     print("   ---------------------------------------------------")
-    
+
     lines = []
+
     while True:
         try:
             line = input()
         except EOFError:
             break
-            
-        # תנאי יציאה: המשתמש כתב DONE
-        if line.strip().upper() == 'DONE':
+
+        if line.strip().upper() == "DONE":
             break
-        
+
         lines.append(line)
-    
+
     return "\n".join(lines)
 
-def main():
-    print("--- The Production Trap Simulator v1.0 ---")
-    
-    # בדיקת מפתח API
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        # בדיקה אם המפתח קיים בקוד עצמו (למקרה ששמתם אותו שם כפתרון זמני)
-        pass 
-    else:
-        print(f"✅ API Key loaded: {api_key[:5]}...")
+def run_graph(app, state):
+    """
+    Runs the graph using stream().
+    Correctly handles node-scoped events and only prints new messages.
+    """
+    latest_state = state
+    seen = 0  # number of messages already printed
 
-    print("Starting system...")
-    
+    for node_state in app.stream(state):
+        for node_name, node_dict in node_state.items():
+            new_messages = node_dict.get("messages", [])[seen:]
+            for msg in new_messages:
+                print(f"Agent: {msg.content}")
+            
+            # update the count of messages seen
+            seen = len(node_dict.get("messages", []))
+            latest_state = node_dict
+
+    return latest_state
+
+
+def main():
+
+    print("--- Production Trap Simulator Chat Mode ---")
+
+    if not os.getenv("OPENAI_API_KEY"):
+        print("❌ OPENAI_API_KEY not found.")
+        return
+
+    print("✅ API Key loaded.")
+    print("Starting simulation...\n")
+
     sim = ProductionTrapSim()
     app = sim.compile()
-    
-    # אתחול
-    state = sim.get_initial_state()
-    
-    # קבלת המשימה הראשונה
-    print("\nSystem: Initializing Scenario...")
-    result = app.invoke(state)
-    state = result
-    print(f"\nAgent: {result['messages'][-1].content}")
 
-    # הלולאה הראשית
+    state = sim.get_initial_state()
+
+    # 🔥 FIRST RUN
+    state = run_graph(app, state)
+
     while True:
-        # שימוש בפונקציה החדשה לקליטת קוד
+        latest_state = state
         user_input = get_multiline_input()
-        
+
         if not user_input.strip():
-            print("Empty input, please write something...")
+            print("Empty input...")
             continue
 
-        if user_input.lower() in ["quit", "exit"]:
+        if user_input.lower() in ["exit", "quit"]:
+            print("Exiting simulation...")
             break
-            
-        # הוספת ההודעה לזיכרון
-        state["messages"].append(HumanMessage(content=user_input))
-        
-        # הרצת הסוכן
-        print("\n⏳ Agent is thinking...")
-        result = app.invoke(state)
-        state = result
-        
-        # הדפסת התשובה
-        agent_msg = result["messages"][-1].content
-        print(f"\nAgent: {agent_msg}")
-        
+
+        # 🔥 Instead of append — send delta state
+        latest_state["messages"] = latest_state.get("messages", []) + [HumanMessage(content=user_input)]    
+        state = run_graph(
+            app,
+            latest_state
+        )
+
+        print(f"[DEBUG] Phase -> {state['current_phase']}")
+
         if state["current_phase"] == "resolution":
-            print("\n--- 🏆 Mission Accomplished! System Stable. ---")
+            print("\n" + "="*50)
+            print("🏆 MISSION ACCOMPLISHED! SYSTEM STABLE.")
+            print("="*50)
             break
+
 
 if __name__ == "__main__":
     main()
