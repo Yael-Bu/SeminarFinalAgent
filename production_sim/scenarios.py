@@ -31,5 +31,5 @@ class ScenarioManager:
 
     def get_random_scenario(self) -> dict:
         """Selects a random scenario for the student"""
-        return self.scenarios[2]
-        ##return random.choice(self.scenarios)
+        return self.scenarios[1]
+        # return random.choice(self.scenarios)

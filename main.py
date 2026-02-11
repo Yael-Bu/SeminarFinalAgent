@@ -26,25 +26,41 @@ def get_multiline_input():
 
     return "\n".join(lines)
 
+from langchain_core.messages import AIMessage
+
 def run_graph(app, state):
     """
     Runs the graph using stream().
-    Correctly handles node-scoped events and only prints new messages.
+    Prints only AI agent messages (no user code).
     """
     latest_state = state
-    seen = 0  # number of messages already printed
+    last_printed = {}
 
     for node_state in app.stream(state):
         for node_name, node_dict in node_state.items():
-            new_messages = node_dict.get("messages", [])[seen:]
-            for msg in new_messages:
-                print(f"Agent: {msg.content}")
-            
-            # update the count of messages seen
-            seen = len(node_dict.get("messages", []))
+            messages = node_dict.get("messages", [])
+
+            if not messages:
+                continue
+
+            last_message = messages[-1]
+
+            # 🔥 Skip user messages (code submissions)
+            if not isinstance(last_message, AIMessage):
+                continue
+
+            # 🔥 Prevent duplicates
+            if last_printed.get(node_name) == last_message.content:
+                continue
+
+            print(f"\n--- {node_name} ---")
+            print(f"Agent: {last_message.content}")
+
+            last_printed[node_name] = last_message.content
             latest_state = node_dict
 
     return latest_state
+
 
 
 def main():

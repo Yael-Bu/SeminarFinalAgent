@@ -4,7 +4,8 @@ from langchain_core.messages import SystemMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from production_sim import state
-
+import re
+import json
 
 class AgentNodes:
     """
@@ -128,60 +129,104 @@ class AgentNodes:
     # -------------------------------------------------
 
     def architect_node(self, state):
+
         print("\n--- Architect Node ---")
+
         new_state = state.copy()
 
         scenario = state["scenario_data"]
         last_msg = state["messages"][-1]
 
+        strategy = scenario['required_fix_concept']
+        failure = scenario['prod_issue']
+        context = scenario['dev_requirement']
+
+        system_template = """
+STRICT ROLE: You are a Senior Software Architect conducting a Technical Review. 
+Your goal is to ensure code quality and system stability.
+
+ENVIRONMENT: {context} 
+OUTAGE: {failure}
+HIDDEN REQUIREMENT: The fix must implement the principle of '{strategy}'.
+
+VALIDATION RULES (Be Logical and Fair):
+1. RECOGNITION: Set 'is_solved' to TRUE if the code implements the core logic of '{strategy}'.
+   - POSITIVE TRIGGERS: Look for 'WAL mode', 'batch_size' (under 5000), 'time.sleep', or 'rowid' filtering.
+   - If the code prevents a single long-held lock by breaking the work into small chunks with pauses, it IS a solution.
+2. SCALE CHECK: If the solution is still synchronous/blocking on the entire table at once (e.g., a simple ALTER TABLE or a massive batch of 100k+), 'is_solved' must be FALSE.
+3. ANALYSIS FIRST: You must briefly analyze the code logic in the 'analysis' field before deciding.
+
+HINTING RULES (If is_solved is false):
+1. FORBIDDEN WORDS: NEVER use these words in your 'hint': 'lock', 'table', 'column', 'index', 'batch', 'script', 'row', 'cache', 'token', 'header'.
+2. NO SPOILERS: Do not suggest specific functions (like sleep or WAL).
+3. SYSTEM OBSERVATIONS: Describe symptoms only:
+   - "Telemetry shows unsustainable latency spikes under load."
+   - "Health checks are failing as the service remains unresponsive."
+   - "The system is struggling with resource saturation; core operations are timed out."
+4. TONE: Professional and concise. Use: "The current implementation doesn't meet our stability requirements."
+
+FORMAT REQUIREMENT:
+Return ONLY a JSON object.
+{{
+    "analysis": "Briefly explain to yourself if the code uses non-blocking patterns (like small batches + sleep + WAL).",
+    "is_solved": boolean,
+    "hint": "Your cryptic symptom-based hint (empty string if solved)"
+}}
+        """
+
         prompt = ChatPromptTemplate.from_messages([
-            ("system", f"""
-            You are a Senior Software Architect performing a production postmortem.
-
-            SYSTEM FAILURE:
-            {scenario['prod_issue']}
-
-            SUCCESS CRITERIA:
-            {scenario['validation_criteria']}
-
-            YOUR TASK:
-
-            ✔ Analyze the developer's fix.
-            ✔ Focus on architecture correctness.
-
-            IF solved → respond EXACTLY:
-
-            SOLVED
-
-            Otherwise → give ONE short hint.
-            No lectures.
-            """),
-            ("human", "{input}")
+            ("system", system_template),
+            ("human", "User Code:\n\n{user_input}")
         ])
 
-        try:
-            response = self.llm.invoke(
-                prompt.format_messages(input=last_msg.content)
-            )
+        response = self.llm.invoke(prompt.format_messages(
+            failure=failure,
+            strategy=strategy,
+            context=context,
+            user_input=last_msg.content
+        ))
 
-        except Exception as e:
-            print(f"LLM Error: {e}")
-            new_state["messages"] = state["messages"] + [AIMessage(content="SOLVED")]
-            new_state["current_phase"] = "resolution"
-            return new_state
+        content = response.content.strip()
 
-        # Count attempts (great for analytics later)
         attempts = state.get("attempts", 0) + 1
 
-        if "SOLVED" in response.content.upper():
-            new_state["messages"] = state["messages"] + [response]
-            new_state["current_phase"] = "resolution"
+        try:
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+
+            if json_match:
+                data = json.loads(json_match.group(0))
+            else:
+                clean = content.replace("```json", "").replace("```", "").strip()
+                data = json.loads(clean)
+
+            # ✅ THOUGHT ANALYSIS
+            # print(f"--- Architect Thought: {data.get('analysis')} ---")
+
+            # ✅ SOLVED
+            if data.get("is_solved") is True:
+
+                new_state["messages"] = state["messages"] + [
+                    AIMessage(content="SOLVED")
+                ]
+                new_state["current_phase"] = "resolution"
+                new_state["attempts"] = attempts
+                return new_state
+
+            # ✅ Hint
+            new_state["messages"] = state["messages"] + [
+                AIMessage(content=data.get("hint"))
+            ]
+            new_state["current_phase"] = "debugging"
             new_state["attempts"] = attempts
             return new_state
 
+        except Exception as e:
 
-        new_state["messages"] = state["messages"] + [response]
-        new_state["current_phase"] = "debugging"
-        new_state["attempts"] = attempts
-        return new_state
+            print(f"❌ JSON Error: {e}")
 
+            new_state["messages"] = state["messages"] + [
+                AIMessage(content="The system still shows instability under load.")
+            ]
+            new_state["current_phase"] = "debugging"
+            new_state["attempts"] = attempts
+            return new_state
