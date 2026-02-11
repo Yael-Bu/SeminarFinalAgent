@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from production_sim import ProductionTrapSim
 
 load_dotenv()
-
+seen = 0  # number of messages already printed
 
 def get_multiline_input():
     print("\n📝 You (Dev) - Type/Paste your code below.")
@@ -26,25 +26,40 @@ def get_multiline_input():
 
     return "\n".join(lines)
 
+# ------------------------------
+# GLOBAL TRACKER FOR PRINTED MESSAGES
+# ------------------------------
+already_printed_ids = set()  # Stores message IDs already printed
+
 def run_graph(app, state):
     """
     Runs the graph using stream().
-    Correctly handles node-scoped events and only prints new messages.
+    Prints only new AI messages (prevents duplicates based on id).
     """
+    global already_printed_ids
     latest_state = state
-    seen = 0  # number of messages already printed
 
     for node_state in app.stream(state):
         for node_name, node_dict in node_state.items():
-            new_messages = node_dict.get("messages", [])[seen:]
+            # Filter AIMessage and SYSTEMMessage
+            filtered_messages = [msg for msg in node_dict.get("messages", []) if type(msg).__name__ == "AIMessage" or type(msg).__name__ == "SystemMessage"]
+
+            # Only new messages that were not printed
+            new_messages = []
+            for msg in filtered_messages:
+                msg_id = msg.additional_kwargs.get("id")
+                if msg_id and msg_id not in already_printed_ids:
+                    new_messages.append(msg)
+                    already_printed_ids.add(msg_id)
+
+            # Print only new AI and System messages
             for msg in new_messages:
                 print(f"Agent: {msg.content}")
-            
-            # update the count of messages seen
-            seen = len(node_dict.get("messages", []))
+
             latest_state = node_dict
 
     return latest_state
+
 
 
 def main():
@@ -85,7 +100,7 @@ def main():
             latest_state
         )
 
-        print(f"[DEBUG] Phase -> {state['current_phase']}")
+        #print(f"[DEBUG] Phase -> {state['current_phase']}")
 
         if state["current_phase"] == "resolution":
             print("\n" + "="*50)

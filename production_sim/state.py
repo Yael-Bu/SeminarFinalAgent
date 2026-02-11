@@ -1,12 +1,14 @@
 from typing import TypedDict, List, Annotated, Literal
 import operator
 from langchain_core.messages import BaseMessage
+from production_sim.helper import add_unique_messages
+
 
 class SimulationState(TypedDict):
     """
     ניהול הזיכרון של הסימולציה.
     """
-    messages: Annotated[List[BaseMessage], operator.add]
+    messages: Annotated[List[BaseMessage], add_unique_messages]
     current_phase: Literal["development", "production_crash", "debugging", "resolution"]
     scenario_id: str  # איזה תרחיש נבחר רנדומלית
     scenario_data: dict # נתונים ספציפיים לתרחיש (הוראות, רמזים)

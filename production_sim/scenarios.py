@@ -1,35 +1,76 @@
 import random
+from typing import List, Dict, Any
 
 class ScenarioManager:
     def __init__(self):
-        self.scenarios = [
+        self.scenarios: List[Dict[str, Any]] = [
             {
                 "id": "legacy_token",
                 "name": "Token Validation vs Legacy",
-                "dev_requirement": "Task: Add a security Token validation middleware to all API calls. If an 'Authorization' header is missing, return 401 Unauthorized.",
-                "prod_issue": "CRITICAL INCIDENT: The Legacy Reporting System has crashed! It sends requests without headers. The CEO cannot view reports.",
+                "dev_requirement": ("Add a security Token validation middleware to all API calls."),
+                "prod_issue": (
+                    "💥 CRITICAL INCIDENT: Legacy Reporting System cannot authenticate!\n"
+                    "❌ The CEO and other legacy users are reporting 401 Unauthorized errors."
+                ),
                 "required_fix_concept": "backward_compatibility",
-                "validation_criteria": "The code must include an exclusion logic or a bypass (e.g., checking for a specific User-Agent or IP) that allows legacy requests to pass without a token."
+                "validation_criteria": (
+                    "Middleware must enforce token validation but allow exceptions for legacy clients."
+                ),
+                "requirements": [
+                    "validate_authorization_header",
+                    "exclude_legacy_clients",
+                    "return_401_on_missing_token"
+                ],
+                "risk_level": "high"
             },
             {
                 "id": "db_lock",
-                "name": "Migration Lock",
-                "dev_requirement": "Task: Write a script to add a 'last_login' column to the 'Users' table.",
-                "prod_issue": "OUTAGE ALERT: The database is unresponsive! Your script locked the entire 'Users' table (10M rows). No one can log in.",
+                "name": "Online Migration",
+                "dev_requirement": ("Add a 'last_login' column to the 'Users' table."),
+                "prod_issue": (
+                    "💥 OUTAGE ALERT: Users cannot log in!\n"
+                    "❌ The database is unresponsive because the 'Users' table was locked."
+                ),
                 "required_fix_concept": "online_migration",
-                "validation_criteria": "The solution should avoid a full table lock. This can be done by using batching (updating in chunks) or database-specific non-blocking syntax (like 'ALGORITHM=INPLACE' or 'CONCURRENTLY')."
+                "validation_criteria": (
+                    "Migration must use batching or non-blocking syntax to avoid downtime."
+                ),
+                "requirements": [
+                    "add_column_last_login",
+                    "batch_updates_or_nonblocking",
+                    "preserve_user_access"
+                ],
+                "risk_level": "high"
             },
             {
                 "id": "rate_limit",
-                "name": "Third Party Burst",
-                "dev_requirement": "Task: Implement a function that fetches weather data from 'WeatherAPI' for every user on the homepage.",
-                "prod_issue": "BLOCKED: 'WeatherAPI' has blocked our IP! We sent 50k requests in 1 minute.",
+                "name": "API Burst Protection",
+                "dev_requirement": ("Fetch weather data for all users on the homepage."),
+                "prod_issue": (
+                    "💥 BLOCKED: Our IP was banned by WeatherAPI!\n"
+                    "❌ Too many requests were sent in a short time (50k requests/min)."
+                ),
                 "required_fix_concept": "caching",
-                "validation_criteria": "The code must implement a caching mechanism (e.g., a dictionary, Redis, or lru_cache) that checks for existing data before making the external API call."
+                "validation_criteria": (
+                    "Use caching (dict, Redis, or LRU) to avoid repeated calls."
+                ),
+                "requirements": [
+                    "cache_weather_api",
+                    "check_existing_data_before_call",
+                    "ttl_or_expiration_handling"
+                ],
+                "risk_level": "medium"
             }
         ]
 
-    def get_random_scenario(self) -> dict:
-        """Selects a random scenario for the student"""
-        return self.scenarios[2]
-        ##return random.choice(self.scenarios)
+    def get_random_scenario(self) -> Dict[str, Any]:
+        """Return a random scenario"""
+        return self.scenarios[1]
+        return random.choice(self.scenarios)
+
+    def get_scenario_by_id(self, scenario_id: str) -> Dict[str, Any]:
+        """Return scenario by ID"""
+        for s in self.scenarios:
+            if s["id"] == scenario_id:
+                return s
+        raise ValueError(f"Scenario {scenario_id} not found")
