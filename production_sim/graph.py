@@ -18,8 +18,10 @@ class ProductionTrapSim:
     - Modular nodes: Team Lead, Production Monitor, Architect
     """
 
-    def __init__(self):
+    def __init__(self, student_id: str):
         # Agent nodes contain logic for Team Lead, Architect, Production Monitor
+        self.student_id = student_id
+    
         self.nodes = AgentNodes()
         self.scenario_manager = ScenarioManager()
 
@@ -160,7 +162,7 @@ class ProductionTrapSim:
         - scenario_data: full scenario data
         - attempts: counter for user attempts
         """
-        scenario = self.scenario_manager.get_random_scenario()
+        scenario = self.scenario_manager.get_dynamic_scenario(student_id=self.student_id)
         return {
             "messages": [],
             "current_phase": "development",

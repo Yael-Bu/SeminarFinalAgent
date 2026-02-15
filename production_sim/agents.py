@@ -113,22 +113,25 @@ class AgentNodes:
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", f"""
-            You are a Senior Software Architect performing a postmortem.
+            You are a strict technical validator. Your ONLY goal is to verify if the code satisfies the specific checklist provided below.
 
-            SYSTEM FAILURE:
-            {scenario['prod_issue']}
+            STRICT EVALUATION SCOPE:
+            1. Validate the code ONLY against the 'Mandatory Checklist' and 'Success Criteria'.
+            2. Ignore any other best practices (security, naming conventions, documentation) unless they are in the checklist.
+            3. If the user missed a specific requirement from the list, name it.
+            
+            MANDATORY CHECKLIST:
+            {scenario.get('requirements', [])}
 
             SUCCESS CRITERIA:
             {scenario['validation_criteria']}
-            Required concepts: {scenario.get('requirements', [])}
-            Risk level: {scenario.get('risk_level', 'medium')}
 
-            TASK:
-            Analyze the submitted fix and check:
-            1️⃣ Does it satisfy the developer task?
-            2️⃣ Does it prevent production risks (e.g., blocking DB, invalid requests, excessive API calls)?
-            3️⃣ If safe → respond EXACTLY with SOLVED
-            4️⃣ If unsafe → give ONE short hint to fix the issue. No lectures.
+            REQUIRED ARCHITECTURAL CONCEPT:
+            {scenario.get('required_fix_concept', 'N/A')}
+
+            RESPONSE RULES:
+            - If ALL items in the checklist and success criteria are met -> Respond EXACTLY with: SOLVED
+            - If ANY item is missing -> Give ONE short technical hint about the missing requirement. No general advice.
             """),
             ("human", "{input}")
         ])
