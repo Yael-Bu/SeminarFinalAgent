@@ -111,7 +111,7 @@ class ScenarioManager:
             dynamic_scenario["required_fix_concept"] = base["required_fix_concept"]
             dynamic_scenario["risk_level"] = base["risk_level"]
             
-            print(f"🎲 Generated scenario for {student_id}: {dynamic_scenario}")
+            #print(f"🎲 Generated scenario for {student_id}: {dynamic_scenario}")
             return dynamic_scenario
         
         except Exception as e:
