@@ -1,15 +1,57 @@
+"""
+Scenario Management Module - Production Trap Simulator
+======================================================
+
+This module is responsible for the 'Scenario Engine' of the simulation. 
+It manages a library of technical failures and handles the dynamic 
+transformation of these templates into personalized student tasks.
+
+Scenario Data Structure (The Dictionary Schema):
+-----------------------------------------------
+Each scenario is defined by a dictionary containing the following keys:
+- 'id' (str): A unique identifier for the scenario type (e.g., 'db_lock').
+- 'name' (str): A human-readable title for the scenario.
+- 'dev_requirement' (str): The 'Bait' – a seemingly simple task presented by the Team Lead.
+- 'prod_issue' (str): The 'Trap' – the technical failure that occurs after deployment.
+- 'required_fix_concept' (str): The core engineering principle needed for resolution (e.g., 'caching').
+- 'validation_criteria' (str): High-level success conditions for the Architect.
+- 'requirements' (list): A strict technical checklist enforced by the Architect's evaluation logic.
+- 'risk_level' (str): Indicates the severity of the production impact (e.g., 'high').
+
+Usage Example:
+--------------
+    manager = ScenarioManager()
+    student_scenario = manager.get_dynamic_scenario(student_id="123456789")
+"""
+
 import random
 from typing import List, Dict, Any
-from click import prompt
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from production_sim import helper
 
 class ScenarioManager:
+    """
+    ScenarioManager Responsibility:
+    -------------------------------
+    This class serves as the central orchestrator for simulation content. 
+    Its primary responsibility is to encapsulate the logic of 'Problem Generation'. 
+    It ensures that while the technical core of a challenge remains robust, its 
+    presentation is unique to each student (Anti-Cheat) and scalable across 
+    different engineering domains (Scale)
+    """
+
     def __init__(self, model_name="gpt-4o-mini"):
-        # נשתמש במודל קטן ומהיר לייצור הוריאציות
-        self.llm = ChatOpenAI(model=model_name, temperature=0.8)
+        """
+        Initializes the manager with a scenario library and a language model.
+        
+        Args:
+            model_name (str): GPT-4o-mini is used for cost-effective natural language 'skinning'.
+        """
+        self.llm = ChatOpenAI(model=model_name, temperature=0.8) # Higher temperature for creative skinning 
+        
+        # Base templates for technical challenges 
         self.scenarios: List[Dict[str, Any]] = [
             {
                 "id": "legacy_token",
@@ -76,12 +118,21 @@ class ScenarioManager:
 
     def get_dynamic_scenario(self, student_id: str = "gen_user") -> Dict[str, Any]:
         """
-        Generates a student-specific variation of a base scenario[cite: 102].
+        Generates a student-specific variation of a base scenario.
+        
+        Uses the Student Signature to rename entities, ensuring that the 
+        technical challenge is unique to the user.
+
+        Args:
+            student_id (str): The student's ID used to seed the randomization.
+
+        Returns:
+            Dict[str, Any]: A personalized scenario dictionary.
         """
-        random.seed(student_id) # Ensure deterministic scenario selection
+        random.seed(student_id) # Deterministic selection per student
         base = random.choice(self.scenarios)
         
-        # Call the helper to get the obfuscated signature
+        # Retrieve the unique 3-letter signature (e.g., _ABC) 
         signature = helper.get_id_signature(student_id)
         
         prompt = ChatPromptTemplate.from_messages([
@@ -100,10 +151,12 @@ class ScenarioManager:
             """),
             ("human", "Base Scenario: {base}")
         ])
+        
         try:
             chain = prompt | self.llm | JsonOutputParser()
             dynamic_scenario = chain.invoke({"base": base, "student_id": student_id})
 
+            # Ensure critical metadata remains unchanged for internal tracking
             if not dynamic_scenario or "id" not in dynamic_scenario:
                 return base
             
@@ -111,16 +164,13 @@ class ScenarioManager:
             dynamic_scenario["required_fix_concept"] = base["required_fix_concept"]
             dynamic_scenario["risk_level"] = base["risk_level"]
             
-            #print(f"🎲 Generated scenario for {student_id}: {dynamic_scenario}")
             return dynamic_scenario
         
         except Exception as e:
+            # Fallback to base scenario in case of LLM generation errors
             print(f"⚠️ Warning: Dynamic generation failed ({e}). Using base scenario.")
             return base
-    
 
     def get_random_scenario(self) -> Dict[str, Any]:
-        """Return a random scenario"""
-        return self.scenarios[1]
+        """Returns a static base scenario from the library."""
         return random.choice(self.scenarios)
-
