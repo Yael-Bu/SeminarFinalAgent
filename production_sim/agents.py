@@ -174,10 +174,17 @@ class AgentNodes:
         new_state = state.copy()
         scenario = state["scenario_data"]
         last_msg = state["messages"][-1]
+        attempts = state.get("attempts", 0)
+
+        hint_style = "subtle and conceptual" if attempts <= 2 else "explicit and technical"
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", f"""
             You are a strict technical validator. Your ONLY goal is to verify if the code satisfies the specific checklist provided below.
+
+            HINT STYLE: {hint_style}
+            - If 'subtle': Don't name the missing library, only the concept.
+            - If 'explicit': Name the specific checklist item the user is missing. 
 
             STRICT EVALUATION SCOPE:
             1. Validate the code ONLY against the 'Mandatory Checklist' and 'Success Criteria'.

@@ -234,6 +234,11 @@ def main():
         if state["current_phase"] == "resolution":
             print("\n" + "="*50)
             print("🏆 MISSION ACCOMPLISHED! SYSTEM STABLE.")
+            attempts = state["attempts"] if "attempts" in state else 1
+            print(f"🔄 Total Attempts: {attempts}")
+
+            score = max(0, 100 - (attempts - 1) * 10)
+            print(f"📊 Final Grade: {score}/100")
             print("="*50)
             sys.stdout.log.close()
             break
