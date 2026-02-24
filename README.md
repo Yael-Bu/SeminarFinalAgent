@@ -3,7 +3,7 @@
 **Project:** Agent-Based Simulator for Real-World Industry Scenarios
 
 ## 📋 Overview
-[cite_start]The **Production Trap Simulator** is an interactive, agentic workflow designed to bridge the gap between academic coding and the high-pressure realities of software production[cite: 8]. [cite_start]Unlike standard coding exercises, this system acts as a "problem generator," placing the student in a realistic lifecycle of a production failure[cite: 15, 16]. [cite_start]The simulation forces users to navigate ambiguous requirements, professional friction, and critical system outages that generic AI tools struggle to solve in a single step[cite: 26, 96].
+The **Production Trap Simulator** is an interactive, agentic workflow designed to bridge the gap between academic coding and the high-pressure realities of software production. Unlike standard coding exercises, this system acts as a "problem generator," placing the student in a realistic lifecycle of a production failure. The simulation forces users to navigate ambiguous requirements, professional friction, and critical system outages that generic AI tools struggle to solve in a single step.
 
 ---
 
@@ -17,11 +17,11 @@ The system is built using **LangGraph** to manage a stateful, cyclic workflow in
 ---
 
 ## 🧠 Strategic Design: AI-Resistance & Scalability
-[cite_start]To satisfy the pedagogical goals of the assignment, the simulator implements several "AI-Resistant" strategies[cite: 94]:
+To satisfy the pedagogical goals of the assignment, the simulator implements several "AI-Resistant" strategies:
 
-* [cite_start]**Dynamic Scenario Mutation (Scale)**: The `ScenarioManager` leverages a generative model to mutate base scenarios[cite: 102]. [cite_start]By varying table names, variable identifiers, and tech-stack specifics for every run, the system ensures that 60+ students cannot simply share solutions[cite: 101, 105].
-* [cite_start]**Human-in-the-Loop Pressure**: The agents are designed to simulate interpersonal dynamics, such as a "nitpicking" reviewer or a stressed manager, forcing students to justify their technical decisions under pressure[cite: 106, 107].
-* [cite_start]**Contextual Dependency**: Success requires understanding the unique "incident report" generated during the `production_crash` phase[cite: 85, 99]. [cite_start]A simple copy-paste into an LLM often fails because the "bug" is only visible through the simulator's specific production logs[cite: 100].
+* **Dynamic Scenario Mutation (Scale)**: The `ScenarioManager` leverages a generative model to mutate base scenarios. By varying table names, variable identifiers, and tech-stack specifics for every run, the system ensures that 60+ students cannot simply share solutions.
+* **Human-in-the-Loop Pressure**: The agents are designed to simulate interpersonal dynamics, such as a "nitpicking" reviewer or a stressed manager, forcing students to justify their technical decisions under pressure.
+* **Contextual Dependency**: Success requires understanding the unique "incident report" generated during the `production_crash` phase. A simple copy-paste into an LLM often fails because the "bug" is only visible through the simulator's specific production logs.
 
 ---
 
@@ -47,10 +47,10 @@ The system is built using **LangGraph** to manage a stateful, cyclic workflow in
 ---
 
 ## 🎯 Educational Objectives
-* [cite_start]**Beyond Syntax**: Teaches students to think about system stability and production risks, not just logic[cite: 26].
-* [cite_start]**Incident Response**: Provides a safe environment to practice debugging "Ghost-in-the-machine" bugs[cite: 82, 83].
-* [cite_start]**Professional Communication**: Simulates the nuances of code reviews and technical justification in a corporate environment[cite: 76, 77].
+* **Beyond Syntax**: Teaches students to think about system stability and production risks, not just logic.
+* **Incident Response**: Provides a safe environment to practice debugging "Ghost-in-the-machine" bugs.
+* **Professional Communication**: Simulates the nuances of code reviews and technical justification in a corporate environment.
 
 ---
 
-[cite_start]**"Bridging the gap between the classroom and the industry through agentic simulation."** [cite: 8]
+**"Bridging the gap between the classroom and the industry through agentic simulation."** 
